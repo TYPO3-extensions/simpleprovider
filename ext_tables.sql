@@ -1,6 +1,6 @@
 #
 # Table structure for table 'tx_simpleprovider_selection_records_mm'
-# 
+#
 #
 CREATE TABLE tx_simpleprovider_selection_records_mm (
   uid_local int(11) DEFAULT '0' NOT NULL,
@@ -39,9 +39,9 @@ CREATE TABLE tx_simpleprovider_selection (
 	hidden tinyint(4) DEFAULT '0' NOT NULL,
 	title varchar(255) DEFAULT '' NOT NULL,
 	description text,
-	reference_table int(11) DEFAULT '0' NOT NULL,
+	reference_table varchar(255) DEFAULT '*' NOT NULL,
 	records int(11) DEFAULT '0' NOT NULL,
-	
+
 	PRIMARY KEY (uid),
 	KEY parent (pid),
 	KEY t3ver_oid (t3ver_oid,t3ver_wsid)
