@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<T3locallang>
+	<meta type="array">
+		<type>database</type>
+		<description>Language labels for database tables/fields belonging to extension 'simpleprovider'</description>
+	</meta>
+	<data type="array">
+		<languageKey index="default" type="array">
+			<label index="tx_simpleprovider_selection">Selection of records</label>
+			<label index="tx_simpleprovider_selection.title">Title</label>
+			<label index="tx_simpleprovider_selection.description">Description</label>
+			<label index="tx_simpleprovider_selection.reference_table">Table</label>
+			<label index="tx_simpleprovider_selection.records">Selected records</label>
+			<label index="tx_simpleprovider_selection.any_tables">Any table</label>
+		</languageKey>
+	</data>
+</T3locallang>
