@@ -32,7 +32,8 @@ $EM_CONF[$_EXTKEY] = array(
 	'version' => '0.0.0',
 	'constraints' => array(
 		'depends' => array(
-			'tesseract' => '',
+			'tesseract' => '1.3.0-0.0.0',
+			'overlays' => '2.0.0-0.0.0'
 		),
 		'conflicts' => array(
 		),
