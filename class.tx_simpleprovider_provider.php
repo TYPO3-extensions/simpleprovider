@@ -43,6 +43,30 @@ class tx_simpleprovider_provider extends tx_tesseract_providerbase {
 	protected $languageObject;
 
 	/**
+	 * @var array List of selected records
+	 */
+	protected $selectedRecords = array();
+
+	/**
+	 * This method is used to load the details about the Data Provider passing it whatever data it needs
+	 * It expands on the parent method to load the records referenced by the provider
+	 *
+	 * @param	array	$data: Data for the Data Provider
+	 * @return	void
+	 */
+	public function loadData($data) {
+		parent::loadData($data);
+			// Get all the records related to this provider
+		$this->selectedRecords = $GLOBALS['TYPO3_DB']->exec_SELECTgetRows(
+			'tablenames, uid_foreign, sorting',
+			'tx_simpleprovider_selection_records_mm',
+			'uid_local = ' . $this->uid,
+			'',
+			'sorting ASC'
+		);
+	}
+
+	/**
 	 * This method returns the type of data structure that the Data Provider can prepare
 	 *
 	 * @return string Type of the provided data structure
@@ -97,9 +121,58 @@ class tx_simpleprovider_provider extends tx_tesseract_providerbase {
 	 * @return array standardised data structure
 	 */
 	public function getDataStructure() {
-
+			// Dispatch to appropriate method depending on requested structure type
+		if ($this->dataStructureType == tx_tesseract::IDLIST_STRUCTURE_TYPE) {
+			$structure = $this->assembleIdListStructure();
+		} else {
+			$structure = $this->assembleRecordsetStructure();
+		}
+		return $structure;
     }
 
+	/**
+	 * Assembles and id list-type data structure from the selected records
+	 *
+	 * @return array Id list-type data structure
+	 */
+	protected function assembleIdListStructure() {
+			// Assemble a list of all different tables, of all uid's
+			// and of all table names and uids concatenated together
+		$tables = array();
+		$uids = array();
+		$uidList = array();
+		foreach ($this->selectedRecords as $record) {
+			$tables[] = $record['tablenames'];
+			$uids[] = $record['uid_foreign'];
+			$uidList[] = $record['tablenames'] . '_' . $record['uid_foreign'];
+		}
+			// Assemble the data structure and return it
+		$tables = array_unique($tables);
+		$numberOfRecords = count($uidList);
+		$dataStructure = array(
+			'uniqueTable' => (count($tables) == 1) ? array_shift($tables) : '',
+			'uidList' => implode(',', $uids),
+			'uidListWithTable' => implode(',', $uidList),
+			'count' => $numberOfRecords,
+			'totalCount' => $numberOfRecords,
+		);
+		return $dataStructure;
+	}
+
+	protected function assembleRecordsetStructure() {
+/*
+			// Loop on all records and sort them per table
+		foreach ($records as $row) {
+			$table = $row['tablenames'];
+			if (!isset($this->selectedRecords[$table])) {
+				$this->selectedRecords[$table] = array();
+				$this->selectedRecordsSorting[$table] = array();
+			}
+			$this->selectedRecords[$table][] = $row['uid_foreign'];
+			$this->selectedRecordsSorting[$table][$row['uid_foreign']] = $row['sorting'];
+		}
+*/
+	}
 	/**
      * This method returns a list of tables and fields (or equivalent) available in the data structure,
      * complete with localized labels
