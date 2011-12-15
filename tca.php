@@ -101,6 +101,17 @@ $TCA['tx_simpleprovider_selection'] = array(
 				'minitems' => 0,
 				'maxitems' => 100,
 				'MM' => 'tx_simpleprovider_selection_records_mm',
+				'wizards' => array(
+					'edit' => array(
+						'type' => 'popup',
+						'title' => 'LLL:EXT:lang/locallang_common.xml:edit',
+						'script' => 'wizard_edit.php',
+						'icon' => 'edit2.gif',
+						'popup_onlyOpenIfSelected' => 1,
+						'notNewRecords' => 1,
+						'JSopenParams' => 'height=500,width=800,status=0,menubar=0,scrollbars=1,resizable=yes'
+					),
+				)
 			)
 		),
 	),
