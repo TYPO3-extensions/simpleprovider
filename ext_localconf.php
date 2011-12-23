@@ -23,4 +23,7 @@ t3lib_extMgm::addService($_EXTKEY,  'dataprovider' /* sv type */,  'tx_simplepro
 		'className' => 'tx_simpleprovider_provider',
 	)
 );
+
+	// Register hook for dynamically manipulating the TCA
+$GLOBALS ['TYPO3_CONF_VARS']['SC_OPTIONS']['t3lib/class.t3lib_tceforms.php']['getMainFieldsClass'][] = 'EXT:simpleprovide/Classes/Hooks/TceForms.php:Tx_Simpleprovider_Hooks_TceForms';
 ?>
