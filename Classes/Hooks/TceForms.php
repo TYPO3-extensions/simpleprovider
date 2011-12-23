@@ -42,7 +42,6 @@ class Tx_Simpleprovider_Hooks_TceForms {
 	 * @return void
 	 */
 	public function getMainFields_preProcess($table, $row, t3lib_TCEforms $caller) {
-		t3lib_utility_Debug::debug($row);
 			// If a single table has been chosen, tweak the TCA definition of the "records" selector
 		if ($row['reference_table'] !== '*') {
 				// Use that single table as the only allowed one
