@@ -19,8 +19,8 @@ t3lib_extMgm::addService($_EXTKEY,  'dataprovider' /* sv type */,  'tx_simplepro
 		'os' => '',
 		'exec' => '',
 
-		'classFile' => t3lib_extMgm::extPath($_EXTKEY, 'class.tx_simpleprovider_provider.php'),
-		'className' => 'tx_simpleprovider_provider',
+		'classFile' => t3lib_extMgm::extPath($_EXTKEY, 'Classes/Services/Provider.php'),
+		'className' => 'Tx_Simpleprovider_Services_Provider',
 	)
 );
 

@@ -31,7 +31,7 @@
  * @package		TYPO3
  * @subpackage	tx_simpleprovider
  */
-class tx_simpleprovider_tx_simpleprovider_selection_reference_table {
+class Tx_Simpleprovider_Utilities_ReferenceTableItems {
 
 	/**
 	 * Add to the list of items all tables that have a TCA configuration

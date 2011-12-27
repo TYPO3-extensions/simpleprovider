@@ -31,7 +31,7 @@
  *
  * $Id$
  */
-class tx_simpleprovider_provider extends tx_tesseract_providerbase {
+class Tx_Simpleprovider_Services_Provider extends tx_tesseract_providerbase {
     /**
      * @var string Type of data structure to provide (default is idList)
      */
