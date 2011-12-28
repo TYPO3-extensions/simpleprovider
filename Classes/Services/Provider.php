@@ -112,6 +112,7 @@ class Tx_Simpleprovider_Services_Provider extends tx_tesseract_providerbase {
 	 * @return boolean TRUE if it can use the requested type, FALSE otherwise
 	 */
 	public function acceptsDataStructure($type) {
+			// TODO: implement support for such input
 		return $type == tx_tesseract::IDLIST_STRUCTURE_TYPE;
     }
 
@@ -131,7 +132,7 @@ class Tx_Simpleprovider_Services_Provider extends tx_tesseract_providerbase {
     }
 
 	/**
-	 * Assembles and id list-type data structure from the selected records
+	 * Assembles an id list-type data structure from the selected records
 	 *
 	 * @return array Id list-type data structure
 	 */
@@ -159,28 +160,74 @@ class Tx_Simpleprovider_Services_Provider extends tx_tesseract_providerbase {
 		return $dataStructure;
 	}
 
+	/**
+	 * Assembles a recordset-type data structure from the selected records
+	 * @return array Recordset-type data structure
+	 */
 	protected function assembleRecordsetStructure() {
-/*
+		$tables = array();
+		$recordsPerTable = array();
+		$recordsSortingPerTable = array();
 			// Loop on all records and sort them per table
-		foreach ($records as $row) {
+		foreach ($this->selectedRecords as $row) {
 			$table = $row['tablenames'];
-			if (!isset($this->selectedRecords[$table])) {
-				$this->selectedRecords[$table] = array();
-				$this->selectedRecordsSorting[$table] = array();
+			if (!isset($recordsPerTable[$table])) {
+				$tables[] = $table;
+				$recordsPerTable[$table] = array();
+				$recordsSortingPerTable[$table] = array();
 			}
-			$this->selectedRecords[$table][] = $row['uid_foreign'];
-			$this->selectedRecordsSorting[$table][$row['uid_foreign']] = $row['sorting'];
+			$recordsPerTable[$table][] = $row['uid_foreign'];
+			$recordsSortingPerTable[$table][$row['uid_foreign']] = $row['sorting'];
 		}
-*/
+			// Fetch the records only for the first table found
+			// There's no sensible way to return data from multiple tables, but maybe this could
+			// evolve in the future of Tesseract
+			// TODO: a warning should be issued when multiple tables are used, but this must wait on having a centralized logging for Tesseract
+		$firstTable = array_shift($tables);
+		$uidList = implode(',', $recordsPerTable[$firstTable]);
+		$records = tx_overlays::getAllRecordsForTable('*', $table, 'uid IN (' . $uidList . ')');
+
+			// Sort records according to uidList
+			// First attribute to each record its sorting value according to the record selection,
+			// then sort on this value
+		$numberOfRecords = count($records);
+		for ($i = 0; $i < $numberOfRecords; $i++) {
+			$records[$i]['tx_simpleprovider:fixed_order'] = $recordsSortingPerTable[$firstTable][$records[$i]['uid']];
+		}
+		usort($records, array('Tx_Simpleprovider_Services_Provider', 'sortUsingFixedOrder'));
+
+			// Prepare the header information
+		$localizedInformation = $this->getTablesAndFields('', $firstTable);
+		$header = array();
+		foreach ($localizedInformation[$firstTable]['fields'] as $fieldName => $fieldLabel) {
+			$header[$fieldName] = array(
+				'label' => $fieldLabel
+			);
+		}
+
+			// Assemble the data structure and return it
+		$dataStructure = array(
+			'name' => $firstTable,
+			'count' => $numberOfRecords,
+			'totalCount' => $numberOfRecords,
+			'uidList' => $uidList,
+			'header' => $header,
+				// TODO: implement filter support
+//			'filter' => ...,
+			'records' => $records
+		);
+		return $dataStructure;
 	}
+
 	/**
      * This method returns a list of tables and fields (or equivalent) available in the data structure,
      * complete with localized labels
      *
      * @param string $language 2-letter iso code for language
+	 * @param string $table Name of a specific table to fetch the information for
      * @return array List of tables and fields
      */
-	public function getTablesAndFields($language = '') {
+	public function getTablesAndFields($language = '', $table = '') {
 		$localizedStructure = array();
 
 			// Get language object
@@ -191,14 +238,19 @@ class Tx_Simpleprovider_Services_Provider extends tx_tesseract_providerbase {
 			$GLOBALS['TSFE']->includeTCA();
 		}
 
-			// If any table can be chosen from, loop on all tables from the TCA
-			// Otherwise, load localized information just for the selected table
-		if ($this->providerData['reference_table'] == '*') {
-			foreach ($GLOBALS['TCA'] as $table => $tableInformation) {
+			// If no table is explicitly defined, check the reference table
+		if (empty($table)) {
+				// If any table can be chosen from, loop on all tables from the TCA
+				// Otherwise, load localized information just for the selected table
+			if ($this->providerData['reference_table'] == '*') {
+				foreach ($GLOBALS['TCA'] as $table => $tableInformation) {
+					$localizedStructure[$table] = $this->getLocalizedInformationForTable($table);
+				}
+			} else {
+				$table = $this->providerData['reference_table'];
 				$localizedStructure[$table] = $this->getLocalizedInformationForTable($table);
 			}
 		} else {
-			$table = $this->providerData['reference_table'];
 			$localizedStructure[$table] = $this->getLocalizedInformationForTable($table);
 		}
 		return $localizedStructure;
@@ -224,7 +276,7 @@ class Tx_Simpleprovider_Services_Provider extends tx_tesseract_providerbase {
 			// Get all the database fields for the table
 		$fields = tx_overlays::getAllFieldsForTable($table);
 			// Loop on all fields and get their localized label, if defined
-		foreach ($fields as $fieldName) {
+		foreach ($fields as $fieldName => $fieldInformation) {
 			if (isset($GLOBALS['TCA'][$table]['columns'][$fieldName]['label'])) {
 				$localizedInformation['fields'][$fieldName] = $this->languageObject->sL($GLOBALS['TCA'][$table]['columns'][$fieldName]['label']);
 			} else {
@@ -233,6 +285,26 @@ class Tx_Simpleprovider_Services_Provider extends tx_tesseract_providerbase {
 		}
 
 		return $localizedInformation;
+	}
+
+	/**
+	 * This static method is called when sorting records using a special fixed order value
+	 *
+	 * @param	mixed	$a: first element to sort
+	 * @param	mixed	$b: second element to sort
+	 *
+	 * @return	integer	-1 if first argument is smaller than second argument, 1 if first is greater than second and 0 if both are equal
+	 *
+	 * @see	tx_dataquery_wrapper::prepareFullStructure()
+	 */
+	static public function sortUsingFixedOrder($a, $b) {
+		$result = 1;
+		if ($a['tx_simpleprovider:fixed_order'] == $b['tx_simpleprovider:fixed_order']) {
+			$result = 0;
+		} elseif ($a['tx_simpleprovider:fixed_order'] < $b['tx_simpleprovider:fixed_order']) {
+			$result = -1;
+		}
+		return $result;
 	}
 }
 ?>

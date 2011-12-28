@@ -28,8 +28,9 @@ $TCA['tx_simpleprovider_selection'] = array(
 	),
 );
 
-	// Register simpleprovider as a secondary Data Provider
+	// Register simpleprovider as both a primary and secondary Data Provider
 t3lib_div::loadTCA('tt_content');
+$TCA['tt_content']['columns']['tx_displaycontroller_provider']['config']['allowed'] .= ',tx_simpleprovider_selection';
 $TCA['tt_content']['columns']['tx_displaycontroller_provider2']['config']['allowed'] .= ',tx_simpleprovider_selection';
 
 	// Add a wizard for adding a simpleprovider
@@ -44,5 +45,6 @@ $addSimpleProviderWizard = array(
 		'setValue' => 'append'
 	)
 );
+$TCA['tt_content']['columns']['tx_displaycontroller_provider']['config']['wizards']['add_simpleprovider'] = $addSimpleProviderWizard;
 $TCA['tt_content']['columns']['tx_displaycontroller_provider2']['config']['wizards']['add_simpleprovider'] = $addSimpleProviderWizard;
 ?>
