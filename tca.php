@@ -84,7 +84,7 @@ $TCA['tx_simpleprovider_selection'] = array(
 					array('LLL:EXT:simpleprovider/locallang_db.xml:tx_simpleprovider_selection.any_tables', '*'),
 					array('', '--div--')
 				),
-				'itemsProcFunc' => 'tx_simpleprovider_tx_simpleprovider_selection_reference_table->getListOfTables',
+				'itemsProcFunc' => 'Tx_Simpleprovider_Utilities_ReferenceTableItems->getListOfTables',
 				'size' => 1,
 				'maxitems' => 1,
 			)
