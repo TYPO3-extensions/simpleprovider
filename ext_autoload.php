@@ -6,6 +6,5 @@
  */
 $extensionPath = t3lib_extMgm::extPath('simpleprovider');
 return array(
-	'tx_simpleprovider_utilities_referencetableitems' => $extensionPath . 'Classes/Utilities/ReferenceTableItems.php',
 );
 ?>
