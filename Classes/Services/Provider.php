@@ -185,7 +185,7 @@ class Tx_Simpleprovider_Services_Provider extends tx_tesseract_providerbase {
 			// TODO: a warning should be issued when multiple tables are used, but this must wait on having a centralized logging for Tesseract
 		$firstTable = array_shift($tables);
 		$uidList = implode(',', $recordsPerTable[$firstTable]);
-		$records = tx_overlays::getAllRecordsForTable('*', $table, 'uid IN (' . $uidList . ')');
+		$records = tx_overlays::getAllRecordsForTable('*', $firstTable, 'uid IN (' . $uidList . ')');
 
 			// Sort records according to uidList
 			// First attribute to each record its sorting value according to the record selection,
