@@ -183,9 +183,22 @@ class Tx_Simpleprovider_Services_Provider extends tx_tesseract_providerbase {
 			// There's no sensible way to return data from multiple tables, but maybe this could
 			// evolve in the future of Tesseract
 			// TODO: a warning should be issued when multiple tables are used, but this must wait on having a centralized logging for Tesseract
-		$firstTable = array_shift($tables);
+		$firstTable = $tables[0];
 		$uidList = implode(',', $recordsPerTable[$firstTable]);
-		$records = tx_overlays::getAllRecordsForTable('*', $firstTable, 'uid IN (' . $uidList . ')');
+		$where = 'uid IN (' . $uidList . ')';
+			// Apply any existing filter
+		$sqlParts = $this->applyFilter($tables);
+		if (!empty($sqlParts['where'])) {
+			$where .= ' AND (' . $sqlParts['where'] . ')';
+		}
+			// Perform the actual query
+		$records = tx_overlays::getAllRecordsForTable(
+			'*',
+			$firstTable,
+			$where,
+			'',
+			(empty($sqlParts['order'])) ? '' : $sqlParts['order']
+		);
 
 			// Sort records according to uidList
 			// First attribute to each record its sorting value according to the record selection,
@@ -212,11 +225,114 @@ class Tx_Simpleprovider_Services_Provider extends tx_tesseract_providerbase {
 			'totalCount' => $numberOfRecords,
 			'uidList' => $uidList,
 			'header' => $header,
-				// TODO: implement filter support
-//			'filter' => ...,
+			'filter' => $this->filter,
 			'records' => $records
 		);
 		return $dataStructure;
+	}
+
+	/**
+	 * Takes a Data Filter structure and processes its instructions into SQL statements
+	 *
+	 * @param array $tables List of tables contained in the record selection
+	 * @return array Array containing the WHERE, ORDER BY and LIMIT clauses
+	 */
+	public function applyFilter($tables) {
+		$sqlStatements = array(
+			'where' => '',
+			'order' => '',
+			'limit' => ''
+		);
+			// Consider the first table of the list to be the main one
+		$mainTable = $tables[0];
+
+		if (isset($this->filter['filters']) && count($this->filter['filters']) > 0) {
+			$logicalOperator = (empty($this->filter['logicalOperator'])) ? 'AND' : $this->filter['logicalOperator'];
+
+			foreach ($this->filter['filters'] as $index => $filterData) {
+				$table = '';
+					// Check if the condition must be explicitly ignored
+					// (i.e. it is transmitted by the filter only for information)
+					// If not, check the table name
+				if ($filterData['void']) {
+					$ignoreCondition = TRUE;
+				} else {
+					$ignoreCondition = FALSE;
+						// If the table is not defined, apply condition to main table
+					if (empty($filterData['table'])) {
+						$table = $mainTable;
+
+						// If table is defined, make sure it is among the selected tables. Otherwise ignore condition
+					} else {
+						$table = $filterData['table'];
+						if (!in_array($filterData['table'], $tables)) {
+							$ignoreCondition = TRUE;
+						}
+					}
+				}
+					// If the condition is to be ignored, log a notice,
+					// otherwise apply it
+				if ($ignoreCondition) {
+					$this->getController()->addMessage(
+						'simpleprovider',
+						'The condition did not apply to a table used in the record selection.',
+						'Condition ignored',
+						t3lib_FlashMessage::NOTICE,
+						$filterData
+					);
+				} else {
+					$field = $filterData['field'];
+					$fullField = $table . '.' . $field;
+					$condition = '';
+					foreach ($filterData['conditions'] as $conditionData) {
+							// If the value is special value "\all", all values must be taken,
+							// so the condition is simply ignored
+						if ($conditionData['value'] != '\all') {
+							if (!empty($condition)) {
+								$condition .= ' AND ';
+							}
+							$condition .= '(' . tx_dataquery_SqlUtility::conditionToSql($fullField, $table, $conditionData) . ')';
+						}
+					}
+						// Add the condition only if it wasn't empty
+					if (!empty($condition)) {
+						if (!empty($sqlStatements['where'])) {
+							$sqlStatements['where'] .= ' ' . $logicalOperator . ' ';
+						}
+						$sqlStatements['where'] .= '(' . $condition . ')';
+					}
+				}
+			}
+		}
+			// Add the eventual raw SQL in the filter
+		if (!empty($filter['rawSQL'])) {
+			$sqlStatements['where'] .= ' ' . $filter['rawSQL'];
+		}
+			// Handle the order by clauses
+		if (count($filter['orderby']) > 0) {
+			foreach ($filter['orderby'] as $orderData) {
+				$table = ((empty($orderData['table'])) ? $mainTable : $orderData['table']);
+					// Apply the ordering only if it matches an existing table,
+					// otherwise log a notice
+				if (in_array($table, $tables)) {
+					$completeField = $table . '.' . $orderData['field'];
+					$orderbyClause = $completeField . ' ' . $orderData['order'];
+					if (!empty($sqlStatements['order'])) {
+						$sqlStatements['order'] .= ', ';
+					}
+					$sqlStatements['order'] .= $orderbyClause;
+				} else {
+					$this->getController()->addMessage(
+						'simpleprovider',
+						'The ordering clause did not apply to a table used in the record selection.',
+						'Ordering ignored',
+						t3lib_FlashMessage::NOTICE,
+						$orderData
+					);
+				}
+			}
+		}
+		return $sqlStatements;
 	}
 
 	/**
