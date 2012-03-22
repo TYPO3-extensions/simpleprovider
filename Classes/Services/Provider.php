@@ -162,6 +162,7 @@ class Tx_Simpleprovider_Services_Provider extends tx_tesseract_providerbase {
 
 	/**
 	 * Assembles a recordset-type data structure from the selected records
+	 *
 	 * @return array Recordset-type data structure
 	 */
 	protected function assembleRecordsetStructure() {
@@ -182,12 +183,20 @@ class Tx_Simpleprovider_Services_Provider extends tx_tesseract_providerbase {
 			// Fetch the records only for the first table found
 			// There's no sensible way to return data from multiple tables, but maybe this could
 			// evolve in the future of Tesseract
-			// TODO: a warning should be issued when multiple tables are used, but this must wait on having a centralized logging for Tesseract
+			// Log a warning about this
+		$this->getController()->addMessage(
+			'simpleprovider',
+			'The record selection contained multiple tables. Only the first one was preserved.',
+			'Multiple tables ignored',
+			t3lib_FlashMessage::WARNING,
+			$tables
+		);
+			// Extract the id list from the first table and assemble a SQL condition based on it
 		$firstTable = $tables[0];
 		$uidList = implode(',', $recordsPerTable[$firstTable]);
 		$where = 'uid IN (' . $uidList . ')';
 			// Apply any existing filter
-		$sqlParts = $this->applyFilter($tables);
+		$sqlParts = $this->applyFilter($firstTable);
 		if (!empty($sqlParts['where'])) {
 			$where .= ' AND (' . $sqlParts['where'] . ')';
 		}
@@ -234,17 +243,15 @@ class Tx_Simpleprovider_Services_Provider extends tx_tesseract_providerbase {
 	/**
 	 * Takes a Data Filter structure and processes its instructions into SQL statements
 	 *
-	 * @param array $tables List of tables contained in the record selection
+	 * @param string $mainTable Name of the main table from the record selection
 	 * @return array Array containing the WHERE, ORDER BY and LIMIT clauses
 	 */
-	public function applyFilter($tables) {
+	public function applyFilter($mainTable) {
 		$sqlStatements = array(
 			'where' => '',
 			'order' => '',
 			'limit' => ''
 		);
-			// Consider the first table of the list to be the main one
-		$mainTable = $tables[0];
 
 		if (isset($this->filter['filters']) && count($this->filter['filters']) > 0) {
 			$logicalOperator = (empty($this->filter['logicalOperator'])) ? 'AND' : $this->filter['logicalOperator'];
@@ -265,7 +272,7 @@ class Tx_Simpleprovider_Services_Provider extends tx_tesseract_providerbase {
 						// If table is defined, make sure it is among the selected tables. Otherwise ignore condition
 					} else {
 						$table = $filterData['table'];
-						if (!in_array($filterData['table'], $tables)) {
+						if ($table != $mainTable) {
 							$ignoreCondition = TRUE;
 						}
 					}
@@ -314,7 +321,7 @@ class Tx_Simpleprovider_Services_Provider extends tx_tesseract_providerbase {
 				$table = ((empty($orderData['table'])) ? $mainTable : $orderData['table']);
 					// Apply the ordering only if it matches an existing table,
 					// otherwise log a notice
-				if (in_array($table, $tables)) {
+				if ($table == $mainTable) {
 					$completeField = $table . '.' . $orderData['field'];
 					$orderbyClause = $completeField . ' ' . $orderData['order'];
 					if (!empty($sqlStatements['order'])) {
