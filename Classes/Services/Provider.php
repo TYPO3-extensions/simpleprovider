@@ -122,11 +122,18 @@ class Tx_Simpleprovider_Services_Provider extends tx_tesseract_providerbase {
 	 * @return array standardised data structure
 	 */
 	public function getDataStructure() {
-			// Dispatch to appropriate method depending on requested structure type
-		if ($this->dataStructureType == tx_tesseract::IDLIST_STRUCTURE_TYPE) {
-			$structure = $this->assembleIdListStructure();
+		if ($this->getEmptyDataStructureFlag()) {
+				// Initialize an empty structure using the name of the first table found
+			$table = $this->selectedRecords[0]['tablenames'];
+			$this->initEmptyDataStructure($table, $this->dataStructureType);
+			$structure = $this->outputStructure;
 		} else {
-			$structure = $this->assembleRecordsetStructure();
+				// Dispatch to appropriate method depending on requested structure type
+			if ($this->dataStructureType == tx_tesseract::IDLIST_STRUCTURE_TYPE) {
+				$structure = $this->assembleIdListStructure();
+			} else {
+				$structure = $this->assembleRecordsetStructure();
+			}
 		}
 		return $structure;
     }
