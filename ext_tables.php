@@ -23,6 +23,7 @@ $TCA['tx_simpleprovider_selection'] = array(
 		'enablecolumns' => array(
 			'disabled' => 'hidden',
 		),
+		'searchFields' => 'title,description,reference_table',
 		'dynamicConfigFile' => t3lib_extMgm::extPath($_EXTKEY) . 'tca.php',
 		'iconfile'          => t3lib_extMgm::extRelPath($_EXTKEY) . 'Resources/Public/Images/icon_tx_simpleprovider_selection.png',
 	),
